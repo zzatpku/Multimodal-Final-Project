@@ -1,0 +1,1 @@
+python pointllm/eval/generate_dataset.py --model_name /root/autodl-tmp/models/PointLLM_7B_v1.2 --task_type classification --prompt_index 0
