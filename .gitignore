@@ -2,7 +2,6 @@ __pycache__
 *.egg-info
 .vscode
 checkpoints
-outputs
 wandb
 anno_data
 objaverse_data
