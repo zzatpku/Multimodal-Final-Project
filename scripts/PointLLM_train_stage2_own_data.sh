@@ -7,11 +7,12 @@ master_port=$((RANDOM % (65535 - 49152 + 1) + 49152))
 filename=$(basename "$0" | cut -f 1 -d '.')
 
 dir_path=/ossfs/workspace/nas5/guhao/PointLLM
-model_name_or_path=checkpoints/PointLLM_7B_v1.1_init
+
+model_name_or_path=outputs/PointLLM_train_stage1/PointLLM_train_stage1 # Path to the output dir of stage 1 training
 data_path=data/objaverse_data
-anno_path=data/anno_data/PointLLM_brief_description_660K_filtered.json # or PointLLM_brief_description_660K.json (including val sets)
-output_dir=outputs/PointLLM_train_stage1/$filename
-point_backbone_ckpt=$model_name_or_path/point_bert_v1.2.pt
+anno_path=checkpoints/PointLLM_7B_v1.2/evaluation/filtered_combined_data/train_data_modified.json
+# anno_path=data/anno_data/PointLLM_complex_instruction_70K.json
+output_dir=outputs/PointLLM_train_stage2_own_data/$filename
 
 cd $dir_path
 
@@ -24,24 +25,27 @@ torchrun --nnodes=1 --nproc_per_node=4 --master_port=$master_port pointllm/train
     --version v1 \
     --model_max_length 2048 \
     --num_train_epochs 3 \
-    --per_device_train_batch_size 16 \
-    --per_device_eval_batch_size 4 \
+    --per_device_train_batch_size 4 \
+    --per_device_eval_batch_size 1 \
     --gradient_accumulation_steps 2 \
     --evaluation_strategy "no" \
+    --eval_steps 100 \
     --save_strategy "steps" \
     --save_steps 2400 \
     --save_total_limit 1 \
-    --learning_rate 2e-3 \
+    --learning_rate 2e-5 \
     --weight_decay 0. \
     --warmup_ratio 0.03 \
     --lr_scheduler_type "cosine" \
     --logging_steps 1 \
     --bf16 True \
-    --evaluation_strategy "no" \
-    --fix_llm True \
+    --fix_llm False \
     --fix_pointnet True \
-    --gradient_checkpointing True \
     --report_to none \
     --run_name $filename \
-    --point_backbone_ckpt $point_backbone_ckpt \
+    --gradient_checkpointing True \
+    --stage_2 True \
+    --fsdp "full_shard auto_wrap" \
+    --fsdp_transformer_layer_cls_to_wrap 'LlamaDecoderLayer' \
+    --conversation_types "detailed_description" "single_round" \
     --use_color True
